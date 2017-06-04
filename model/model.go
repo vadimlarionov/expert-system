@@ -1,12 +1,8 @@
 package model
 
-import (
-	_ "fmt"
-)
-
 type Attribute struct {
 	Id     uint
-	Text   string
+	Text   string            `orm:"unique"`
 	Values []*AttributeValue `orm:"reverse(many)"`
 }
 
@@ -18,14 +14,15 @@ type AttributeValue struct {
 
 type Object struct {
 	Id              uint
-	Name            string
+	Name            string            `orm:"unique"`
 	AttributeValues []*AttributeValue `orm:"rel(m2m)"`
 }
 
 type Parameter struct {
-	Id     uint
-	Name   string
-	Values []*ParameterValue `orm:"reverse(many)"`
+	Id       uint
+	Name     string `orm:"unique"`
+	IsSelect bool
+	Values   []*ParameterValue `orm:"reverse(many)"`
 }
 
 type ParameterValue struct {
@@ -36,7 +33,7 @@ type ParameterValue struct {
 
 type Question struct {
 	Id        uint
-	IsStrict  bool
+	IsSelect  bool
 	Parameter *Parameter `orm:"rel(one)"`
 	Answers   []*Answer  `orm:"reverse(many)"`
 }
