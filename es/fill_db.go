@@ -3,6 +3,7 @@ package es
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/astaxie/beego/orm"
 	"github.com/vadimlarionov/expert-system/model"
@@ -28,10 +29,15 @@ func Fill() (err error) {
 		return err
 	}
 
+	if err = fillObjects("data/objects.json", o); err != nil {
+		fmt.Printf("Can't fill objects: %s", err)
+		return err
+	}
+
 	return nil
 }
 
-func fillFromCSV(fileName string, fillFunc func(row []string) error) error {
+func fillTablesFromCSV(fileName string, fillFunc func(row []string) error) error {
 	f, err := os.Open(fileName)
 	if err != nil {
 		fmt.Printf("Can't open %s: %s\n", fileName, err)
@@ -90,7 +96,7 @@ func fillAttributes(fileName string, o orm.Ormer) (err error) {
 		return nil
 	}
 
-	return fillFromCSV(fileName, fillFunc)
+	return fillTablesFromCSV(fileName, fillFunc)
 }
 
 func fillParameters(fileName string, o orm.Ormer) (err error) {
@@ -123,28 +129,84 @@ func fillParameters(fileName string, o orm.Ormer) (err error) {
 		return nil
 	}
 
-	return fillFromCSV(fileName, fillFunc)
+	return fillTablesFromCSV(fileName, fillFunc)
 }
 
 func fillObjects(fileName string, o orm.Ormer) (err error) {
-	_, err = parseJson(fileName)
+	objects, err := parseJson(fileName)
 	if err != nil {
 		return err
+	}
+
+	attrCount, err := o.QueryTable("attribute").Count()
+	if err != nil {
+		fmt.Printf("Can't count attributes from table: %s\n", err)
+		return err
+	}
+
+	fmt.Printf("-----\nInsert objects and it's attribute values\n-----\n")
+	for _, obj := range objects {
+		fmt.Printf("Create object \"%s\"", obj.Name)
+		modelObj := model.Object{Name: obj.Name}
+		_, err := o.Insert(&modelObj)
+		if err != nil {
+			fmt.Printf("Can't insert object %s\n", obj.Name)
+			return err
+		}
+
+		values := []*model.AttributeValue{}
+		for attr, val := range obj.Attributes {
+			attribute := model.Attribute{Text: attr}
+			err = o.Read(&attribute, "Text")
+			if err != nil {
+				fmt.Printf("Can't read attribute %s: %s\n", attr, err)
+				return err
+			}
+
+			value := &model.AttributeValue{Text: val, Attribute: &attribute}
+			err = o.Read(value, "Text", "Attribute")
+			if err != nil {
+				fmt.Printf("Can't read attribute value \"%s\": %s\n", val, err)
+				return err
+			}
+			values = append(values, value)
+		}
+
+		if attrCount != int64(len(values)) {
+			fmt.Printf("Fill all attributes")
+			return errors.New("Len of object attributes not equals number of attributes")
+		}
+
+		m2m := o.QueryM2M(&modelObj, "AttributeValues")
+		for _, value := range values {
+			fmt.Printf("Add attribute value \"%s\" to object \"%s\"\n", value.Text, modelObj.Name)
+			_, err := m2m.Add(value)
+			if err != nil {
+				fmt.Printf("Can't insert attibute value \"%v\"to object \"%v\"\n", value, modelObj)
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
-func parseJson(fileName string) (jsonData *map[string]interface{}, err error) {
+type object struct {
+	Name       string            `json:"name"`
+	Attributes map[string]string `json:"attributes"`
+}
+
+func parseJson(fileName string) (objects []object, err error) {
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		fmt.Printf("Can't read file %s: %s", fileName, err)
+		fmt.Printf("Can't read file %s: %s\n", fileName, err)
 		return nil, err
 	}
 
-	if err = json.Unmarshal(bytes, &jsonData); err != nil {
-		fmt.Printf("Can't parse json: %s", err)
+	if err = json.Unmarshal(bytes, &objects); err != nil {
+		fmt.Printf("Can't parse json: %s\n", err)
 		return nil, err
 	}
-	return jsonData, nil
+
+	return objects, nil
 }
