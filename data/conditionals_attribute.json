@@ -1,0 +1,156 @@
+[
+  {
+    "is_and": true,
+    "items": [
+      {
+        "parameter": "Пол",
+        "operation": "=",
+        "value": "Мужской"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Вид деятельности",
+        "value": "Боевые"
+      },
+      {
+        "attribute": "Контингент",
+        "value": "Скорее парни"
+      }
+    ]
+  },
+  {
+    "is_and": true,
+    "items": [
+      {
+        "parameter": "Пол",
+        "operation": "=",
+        "value": "Женский"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Вид деятельности",
+        "value": "Нейтральные"
+      },
+      {
+        "attribute": "Контингент",
+        "value": "Скорее девушки"
+      }
+    ]
+  },
+
+
+  {
+    "is_and": false,
+    "items": [
+      {
+        "parameter": "Рост",
+        "operation": "<=",
+        "value": "149"
+      },
+      {
+        "parameter": "Рост",
+        "operation": ">=",
+        "value": "191"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Травмоопасность",
+        "value": "Низкая"
+      }
+    ]
+  },
+  {
+    "is_and": true,
+    "items": [
+      {
+        "parameter": "Рост",
+        "operation": ">=",
+        "value": "150"
+      },
+      {
+        "parameter": "Рост",
+        "operation": "<=",
+        "value": "170"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Травмоопасность",
+        "value": "Средняя"
+      }
+    ]
+  },
+  {
+    "is_and": true,
+    "items": [
+      {
+        "parameter": "Рост",
+        "operation": ">=",
+        "value": "171"
+      },
+      {
+        "parameter": "Рост",
+        "operation": "<=",
+        "value": "190"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Травмоопасность",
+        "value": "Высокая"
+      }
+    ]
+  },
+
+  {
+    "is_and": true,
+    "items": [
+      {
+        "parameter": "Комплекция",
+        "operation": "=",
+        "value": "Толстый"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Физические нагрузки",
+        "value": "Низкие"
+      }
+    ]
+  },
+  {
+    "is_and": true,
+    "items": [
+      {
+        "parameter": "Комплекция",
+        "operation": "=",
+        "value": "Худой"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Физические нагрузки",
+        "value": "Средние"
+      }
+    ]
+  },
+  {
+    "is_and": true,
+    "items": [
+      {
+        "parameter": "Комплекция",
+        "operation": "=",
+        "value": "Средний"
+      }
+    ],
+    "result": [
+      {
+        "attribute": "Физические нагрузки",
+        "value": "Высокие"
+      }
+    ]
+  }
+]

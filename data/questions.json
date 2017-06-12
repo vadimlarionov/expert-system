@@ -1,0 +1,72 @@
+[
+  {
+    "parameter": "Пол",
+    "question": "Укажите ваш пол",
+    "question_number": 1,
+    "is_select": true,
+    "answers": [
+      {
+        "answer": "Мужской",
+        "parameter_value" : "Мужской",
+        "next_question": 2
+      },
+      {
+        "answer": "Женский",
+        "parameter_value" : "Женский",
+        "next_question": 2
+      }
+    ]
+  },
+  {
+    "parameter": "Рост",
+    "question": "Какой у вас рост? (см)",
+    "question_number": 2,
+    "is_select": false
+  },
+  {
+    "parameter": "Комплекция",
+    "question": "Вы толстенький (-ая)?",
+    "question_number": 3,
+    "is_select": true,
+    "answers": [
+      {
+        "answer": "Да",
+        "parameter_value" : "Толстый",
+        "next_question": 4
+      },
+      {
+        "answer": "Нет",
+        "parameter_value" : "Худой",
+        "next_question": 4
+      },
+      {
+        "answer": "Не очень",
+        "parameter_value" : "Средний",
+        "next_question": 4
+      }
+    ]
+  },
+  {
+    "parameter": "Сила",
+    "question": "Кочергу погнуть сможете?",
+    "question_number": 4,
+    "is_select": true,
+    "answers": [
+      {
+        "answer": "Легко!",
+        "parameter_value" : "Сильный",
+        "next_question": 5
+      },
+      {
+        "answer": "С трудом",
+        "parameter_value" : "Средний",
+        "next_question": 5
+      },
+      {
+        "answer": "Нет",
+        "parameter_value" : "Слабый",
+        "next_question": 5
+      }
+    ]
+  }
+]

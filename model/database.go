@@ -40,10 +40,14 @@ func registerModels() {
 		new(ParameterValue),
 		new(Question),
 		new(Answer),
-		new(Condition),
-		new(ConditionItem),
-		new(ConditionResult),
-		new(ConditionAttributeResult),
+		new(Conditional),
+		new(ConditionalItem),
+		new(ConditionalAttributeResult),
 		new(ConditionalParameterResult),
+
+		new(Quest),
+		new(QuestQuestions),
+		new(QuestAttribute),
+		new(QuestParameter),
 	)
 }

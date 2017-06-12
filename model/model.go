@@ -33,46 +33,71 @@ type ParameterValue struct {
 
 type Question struct {
 	Id        uint
+	Text      string
 	IsSelect  bool
+	Number    int        `orm:"unique"`
 	Parameter *Parameter `orm:"rel(one)"`
 	Answers   []*Answer  `orm:"reverse(many)"`
 }
 
 type Answer struct {
-	Id           uint
-	Question     *Question `orm:"rel(fk)"`
-	NextQuestion *Question `orm:"rel(fk)"`
-	Value        string
+	Id                 uint
+	Question           *Question `orm:"rel(fk)"`
+	NextQuestionNumber int
+	Text               string
+	Value              *ParameterValue `orm:"rel(fk)"`
 }
 
-type Condition struct {
+type Conditional struct {
 	Id    uint
 	IsAnd bool
-	Items []*ConditionItem `orm:"reverse(many)"`
+	Items []*ConditionalItem `orm:"reverse(many)"`
 }
 
-type ConditionItem struct {
+type ConditionalItem struct {
 	Id        uint
-	Condition *Condition `orm:"rel(fk)"`
-	Parameter *Parameter `orm:"rel(fk)"`
-	Operation string     `orm:"size(10)"`
+	Condition *Conditional `orm:"rel(fk)"`
+	Parameter *Parameter   `orm:"rel(fk)"`
+	Operation string       `orm:"size(10)"`
 	Value     string
 }
 
-type ConditionResult struct {
-	Id               uint
-	AttributesResult []*ConditionAttributeResult   `orm:"reverse(many)"`
-	ParametersResult []*ConditionalParameterResult `orm:"reverse(many)"`
-}
-
-type ConditionAttributeResult struct {
-	Id              uint
-	ConditionResult *ConditionResult `orm:"rel(fk)"`
-	Attribute       *Attribute       `orm:"rel(fk)"`
-}
-
 type ConditionalParameterResult struct {
-	Id              uint
-	ConditionResult *ConditionResult `orm:"rel(fk)"`
-	Parameter       *Parameter       `orm:"rel(fk)"`
+	Id          uint
+	Conditional *Conditional `orm:"rel(fk)"`
+	Parameter   *Parameter   `orm:"rel(fk)"`
+	Value       string
+}
+
+type ConditionalAttributeResult struct {
+	Id             uint
+	Conditional    *Conditional    `orm:"rel(fk)"`
+	Attribute      *Attribute      `orm:"rel(fk)"`
+	AttributeValue *AttributeValue `orm:"rel(fk)"`
+}
+
+type Quest struct {
+	Id       uint
+	Username string
+}
+
+type QuestAttribute struct {
+	Id             uint
+	Quest          *Quest          `orm:"rel(fk)"`
+	Attribute      *Attribute      `orm:"rel(fk)"`
+	AttributeValue *AttributeValue `orm:"rel(fk)"`
+}
+
+type QuestParameter struct {
+	Id        uint
+	Quest     *Quest     `orm:"rel(fk)"`
+	Parameter *Parameter `orm:"rel(fk)"`
+	Value     string
+}
+
+type QuestQuestions struct {
+	Id         uint
+	Quest      *Quest    `orm:"rel(fk)"`
+	Question   *Question `orm:"rel(fk)"`
+	IsAnswered bool
 }
