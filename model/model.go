@@ -53,6 +53,7 @@ type Conditional struct {
 	IsAnd            bool
 	Items            []*ConditionalItem            `orm:"reverse(many)"`
 	AttributeResults []*ConditionalAttributeResult `orm:"reverse(many)"`
+	ParameterResults []*ConditionalParameterResult `orm:"reverse(many)"`
 }
 
 type ConditionalItem struct {

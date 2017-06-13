@@ -17,13 +17,9 @@ func StartQuest() {
 		return
 	}
 
-	conditionals, err := loadConditions(o)
-	if err != nil {
-		fmt.Printf("Can't load conditionals: %s\n", err)
-		return
-	}
-
+	expertSystem, err := initExpertSystem(o)
 	parametersMap := make(map[uint]string)
+	attributesMap := make(map[string]string)
 
 	questionNum := 1
 	for questionNum != -1 {
@@ -59,7 +55,6 @@ func StartQuest() {
 				return
 			}
 
-
 			parametersMap[q.Parameter.Id] = answer.Value.Value
 			err = writeQuestParameter(&quest, q.Parameter, answer.Value.Value, o)
 			if err != nil {
@@ -75,13 +70,34 @@ func StartQuest() {
 
 			questionNum++
 		}
+
+		parametersMapChanged := true
+		for parametersMapChanged {
+			parametersMapChanged = checkConditionalsParam(parametersMap, expertSystem.conditionals)
+		}
+
+		attributesMap = checkConditionalsAttr(parametersMap, expertSystem.conditionals)
+
+		expertSystem.printObjects(attributesMap)
 	}
 
-	attributesMap := checkConditionals(parametersMap, conditionals)
-	fmt.Printf("%v\n", attributesMap)
+	expertSystem.printObjects(attributesMap)
+}
 
-	fmt.Printf("%v", parametersMap)
+func (expertSystem *expertSystemType) printObjects(attributesMap map[string]string) {
+	ratingMap := make(map[string]int)
+	for _, obj := range expertSystem.objects {
+		ratingMap[obj.Name] = 0
+		for _, attrVal := range obj.AttributeValues {
+			if val, ok := attributesMap[attrVal.Attribute.Text]; ok {
+				if val == attrVal.Text {
+					ratingMap[obj.Name] += 1
+				}
+			}
+		}
+	}
 
+	utils.PrintObjectsWithRating(ratingMap)
 }
 
 func writeQuestParameter(quest *model.Quest, parameter *model.Parameter, value string, o orm.Ormer) (err error) {
@@ -108,7 +124,7 @@ func nextQuestion(o orm.Ormer, expectedQuestion int) *model.Question {
 	return &q
 }
 
-func checkConditionals(parametersMap map[uint]string, conditionals []*model.Conditional) map[string]string {
+func checkConditionalsAttr(parametersMap map[uint]string, conditionals []*model.Conditional) map[string]string {
 	attributesMap := make(map[string]string)
 	for _, conditional := range conditionals {
 		result := false
@@ -137,57 +153,33 @@ func checkConditionals(parametersMap map[uint]string, conditionals []*model.Cond
 	return attributesMap
 }
 
-func loadConditions(o orm.Ormer) (conditionals []*model.Conditional, err error) {
-	qb, err := orm.NewQueryBuilder("mysql")
-	if err != nil {
-		fmt.Printf("Can't create query builder: %s\n", err)
-		return nil, err
-	}
-
-	query := qb.Select("*").From("conditional").String()
-	_, err = o.Raw(query).QueryRows(&conditionals)
-	if err != nil {
-		fmt.Printf("Can't execute query: %s\n", err)
-		return nil, err
-	}
-
+func checkConditionalsParam(parametersMap map[uint]string, conditionals []*model.Conditional) (changed bool) {
 	for _, conditional := range conditionals {
-		// Load items
-		_, err = o.LoadRelated(conditional, "Items")
-		if err != nil {
-			fmt.Printf("Can't load related items: %s\n", err)
-			return nil, err
-		}
-
+		result := false
 		for _, item := range conditional.Items {
-			_, err := o.LoadRelated(item, "Parameter")
-			if err != nil {
-				fmt.Printf("Can't load related parameters: %s\n", err)
-				return nil, err
+			if val, ok := parametersMap[item.Parameter.Id]; ok {
+				if item.Parameter.IsSelect {
+					result = utils.CompareStrings(val, item.Operation, item.Value)
+				} else {
+					result = utils.CompareInts(val, item.Operation, item.Value)
+				}
+			} else {
+				result = false
+			}
+
+			if (conditional.IsAnd && !result) || (!conditional.IsAnd && result) {
+				break
 			}
 		}
 
-		// Load attribute results
-		_, err = o.LoadRelated(conditional, "AttributeResults")
-		if err != nil {
-			fmt.Printf("Can't load related attribute results: %s\n", err)
-			return nil, err
-		}
-
-		for _, attrResult := range conditional.AttributeResults {
-			_, err := o.LoadRelated(attrResult, "Attribute")
-			if err != nil {
-				fmt.Printf("Can't load related attributes: %s\n", err)
-				return nil, err
-			}
-
-			_, err = o.LoadRelated(attrResult, "AttributeValue")
-			if err != nil {
-				fmt.Printf("Can't load related attribute value: %s\n", err)
-				return nil, err
+		if result {
+			for _, paramResult := range conditional.ParameterResults {
+				if _, exists := parametersMap[paramResult.Parameter.Id]; !exists {
+					parametersMap[paramResult.Parameter.Id] = paramResult.Value
+					changed = true
+				}
 			}
 		}
 	}
-
-	return conditionals, nil
+	return changed
 }

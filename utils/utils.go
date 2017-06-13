@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -49,3 +50,28 @@ func CompareInts(first, operation, second string) bool {
 		return false
 	}
 }
+
+func PrintObjectsWithRating(ratingsMap map[string]int) {
+	pl := make(PairList, 0, len(ratingsMap))
+	for k, v := range ratingsMap {
+		pl = append(pl, Pair{Key: k, Value: v})
+	}
+	sort.Sort(sort.Reverse(pl))
+
+	fmt.Printf("=====\nОбъекты и их рейтинг\n")
+	for i, p := range pl {
+		fmt.Printf("%d: %s = %d\n", i+1, p.Key, p.Value)
+	}
+	fmt.Printf("=====\n")
+}
+
+type Pair struct {
+	Key   string
+	Value int
+}
+
+type PairList []Pair
+
+func (p PairList) Len() int           { return len(p) }
+func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
