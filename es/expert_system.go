@@ -5,6 +5,8 @@ import (
 	"github.com/astaxie/beego/orm"
 	"github.com/vadimlarionov/expert-system/model"
 	"github.com/vadimlarionov/expert-system/utils"
+	"strconv"
+	"strings"
 )
 
 func StartQuest() {
@@ -18,8 +20,6 @@ func StartQuest() {
 	}
 
 	expertSystem, err := initExpertSystem(o)
-	parametersMap := make(map[uint]string)
-	attributesMap := make(map[string]string)
 
 	questionNum := 1
 	for questionNum != -1 {
@@ -41,55 +41,48 @@ func StartQuest() {
 				fmt.Printf("Can't load related answers for question \"%s\": %s", q.Text, err)
 				return
 			}
-			for i, answ := range q.Answers {
-				fmt.Printf("%d: %s\n", i+1, answ.Text)
-			}
-			fmt.Printf("Ваш ответ: ")
-			var userAnswer int
-			fmt.Scanf("%d", &userAnswer)
 
-			answer := q.Answers[userAnswer-1]
-			if _, err = o.LoadRelated(answer, "Value"); err != nil {
-				fmt.Printf("Can't load related parameter value for answer \"%s\": %s\n",
-					answer.Text, err)
-				return
-			}
+			answerIndex := readAnswerWithChoice(expertSystem, q.Answers)
+			if answerIndex >= 0 {
+				answer := q.Answers[answerIndex]
+				if _, err = o.LoadRelated(answer, "Value"); err != nil {
+					fmt.Printf("Can't load related parameter value for answer \"%s\": %s\n",
+						answer.Text, err)
+					return
+				}
 
-			parametersMap[q.Parameter.Id] = answer.Value.Value
-			err = writeQuestParameter(&quest, q.Parameter, answer.Value.Value, o)
-			if err != nil {
-				return
+				expertSystem.parametersMapState[q.Parameter.Id] = answer.Value.Value
+
+				questionNum = answer.NextQuestionNumber
+			} else {
+				questionNum++
 			}
 
-			questionNum = answer.NextQuestionNumber
 		} else {
-			fmt.Printf("Ваш ответ: ")
-			var userAnswer string
-			fmt.Scanf("%s", &userAnswer)
-			err = writeQuestParameter(&quest, q.Parameter, userAnswer, o)
-
+			userAnswer, skip := readFreeAnswer(expertSystem)
+			if !skip {
+				expertSystem.parametersMapState[q.Parameter.Id] = strconv.Itoa(userAnswer)
+			}
 			questionNum++
 		}
 
 		parametersMapChanged := true
 		for parametersMapChanged {
-			parametersMapChanged = checkConditionalsParam(parametersMap, expertSystem.conditionals)
+			parametersMapChanged = checkConditionalsParam(expertSystem.parametersMapState, expertSystem.conditionals)
 		}
 
-		attributesMap = checkConditionalsAttr(parametersMap, expertSystem.conditionals)
-
-		expertSystem.printObjects(attributesMap)
+		expertSystem.attributesMapState = checkConditionalsAttr(expertSystem.parametersMapState, expertSystem.conditionals)
 	}
 
-	expertSystem.printObjects(attributesMap)
+	expertSystem.printObjects()
 }
 
-func (expertSystem *expertSystemType) printObjects(attributesMap map[string]string) {
+func (expertSystem *expertSystemType) printObjects() {
 	ratingMap := make(map[string]int)
 	for _, obj := range expertSystem.objects {
 		ratingMap[obj.Name] = 0
 		for _, attrVal := range obj.AttributeValues {
-			if val, ok := attributesMap[attrVal.Attribute.Text]; ok {
+			if val, ok := expertSystem.attributesMapState[attrVal.Attribute.Text]; ok {
 				if val == attrVal.Text {
 					ratingMap[obj.Name] += 1
 				}
@@ -182,4 +175,64 @@ func checkConditionalsParam(parametersMap map[uint]string, conditionals []*model
 		}
 	}
 	return changed
+}
+
+func readAnswerWithChoice(expertSystem *expertSystemType, answers []*model.Answer) (answerIndex int) {
+	for {
+		for i, answer := range answers {
+			fmt.Printf("%d: %s\n", i+1, answer.Text)
+		}
+		fmt.Printf("Ваш ответ: ")
+
+		var userAnswer string
+		fmt.Scanf("%s", &userAnswer)
+
+		if userAnswer == "" {
+			return -1
+		} else if strings.HasPrefix(userAnswer, "/") {
+			printSystemMessage(expertSystem, userAnswer)
+		} else {
+			answerIndex, err := strconv.Atoi(userAnswer)
+			if err != nil {
+				fmt.Println("Необходимо выбрать один из предложенных вариантов")
+				continue
+			}
+
+			if answerIndex > 0 && answerIndex <= len(answers) {
+				return answerIndex - 1
+			} else {
+				fmt.Println("Необходимо выбрать один из предложенных вариантов")
+			}
+		}
+	}
+}
+
+func readFreeAnswer(expertSystem *expertSystemType) (answer int, skip bool) {
+	for {
+		var userAnswer string
+		fmt.Scanf("%s", &userAnswer)
+
+		if userAnswer == "" {
+			return 0, true
+		} else if strings.HasPrefix(userAnswer, "/") {
+			printSystemMessage(expertSystem, userAnswer)
+		} else {
+			answer, err := strconv.Atoi(userAnswer)
+			if err != nil {
+				fmt.Println("Необходимо ввести число")
+				continue
+			}
+
+			return answer, false
+		}
+	}
+}
+
+func printSystemMessage(expertSystem *expertSystemType, cmd string) {
+	switch cmd {
+	case "/rating":
+		expertSystem.printObjects()
+	default:
+		fmt.Printf("Unexpected command \"%s\"\n", cmd)
+	}
 }

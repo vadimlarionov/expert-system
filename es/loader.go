@@ -7,8 +7,10 @@ import (
 )
 
 type expertSystemType struct {
-	objects      []*model.Object
-	conditionals []*model.Conditional
+	objects            []*model.Object
+	conditionals       []*model.Conditional
+	parametersMapState map[uint]string
+	attributesMapState map[string]string
 }
 
 func initExpertSystem(o orm.Ormer) (expertSystem *expertSystemType, err error) {
@@ -27,6 +29,9 @@ func initExpertSystem(o orm.Ormer) (expertSystem *expertSystemType, err error) {
 		return nil, err
 	}
 	expertSystem.conditionals = conditionals
+
+	expertSystem.parametersMapState = make(map[uint]string)
+	expertSystem.attributesMapState = make(map[string]string)
 
 	return expertSystem, nil
 }
