@@ -17,8 +17,13 @@ func StartQuest() {
 		return
 	}
 
-	//attributesMap := make(map[string]string)
-	parametersMap := make(map[int]string)
+	conditionals, err := loadConditions(o)
+	if err != nil {
+		fmt.Printf("Can't load conditionals: %s\n", err)
+		return
+	}
+
+	parametersMap := make(map[uint]string)
 
 	questionNum := 1
 	for questionNum != -1 {
@@ -54,6 +59,8 @@ func StartQuest() {
 				return
 			}
 
+
+			parametersMap[q.Parameter.Id] = answer.Value.Value
 			err = writeQuestParameter(&quest, q.Parameter, answer.Value.Value, o)
 			if err != nil {
 				return
@@ -69,6 +76,9 @@ func StartQuest() {
 			questionNum++
 		}
 	}
+
+	attributesMap := checkConditionals(parametersMap, conditionals)
+	fmt.Printf("%v\n", attributesMap)
 
 	fmt.Printf("%v", parametersMap)
 
@@ -98,12 +108,8 @@ func nextQuestion(o orm.Ormer, expectedQuestion int) *model.Question {
 	return &q
 }
 
-func checkConditionals(quest *model.Quest, parametersMap map[uint]string, o orm.Ormer) {
-	conditionals, err := loadConditions(o)
-	if err != nil {
-		return
-	}
-
+func checkConditionals(parametersMap map[uint]string, conditionals []*model.Conditional) map[string]string {
+	attributesMap := make(map[string]string)
 	for _, conditional := range conditionals {
 		result := false
 		for _, item := range conditional.Items {
@@ -123,9 +129,12 @@ func checkConditionals(quest *model.Quest, parametersMap map[uint]string, o orm.
 		}
 
 		if result {
-			// Выполняем что надо сделать
+			for _, attrResult := range conditional.AttributeResults {
+				attributesMap[attrResult.Attribute.Text] = attrResult.AttributeValue.Text
+			}
 		}
 	}
+	return attributesMap
 }
 
 func loadConditions(o orm.Ormer) (conditionals []*model.Conditional, err error) {
@@ -142,8 +151,8 @@ func loadConditions(o orm.Ormer) (conditionals []*model.Conditional, err error) 
 		return nil, err
 	}
 
-	// Load items
 	for _, conditional := range conditionals {
+		// Load items
 		_, err = o.LoadRelated(conditional, "Items")
 		if err != nil {
 			fmt.Printf("Can't load related items: %s\n", err)
@@ -158,6 +167,26 @@ func loadConditions(o orm.Ormer) (conditionals []*model.Conditional, err error) 
 			}
 		}
 
+		// Load attribute results
+		_, err = o.LoadRelated(conditional, "AttributeResults")
+		if err != nil {
+			fmt.Printf("Can't load related attribute results: %s\n", err)
+			return nil, err
+		}
+
+		for _, attrResult := range conditional.AttributeResults {
+			_, err := o.LoadRelated(attrResult, "Attribute")
+			if err != nil {
+				fmt.Printf("Can't load related attributes: %s\n", err)
+				return nil, err
+			}
+
+			_, err = o.LoadRelated(attrResult, "AttributeValue")
+			if err != nil {
+				fmt.Printf("Can't load related attribute value: %s\n", err)
+				return nil, err
+			}
+		}
 	}
 
 	return conditionals, nil

@@ -49,9 +49,10 @@ type Answer struct {
 }
 
 type Conditional struct {
-	Id    uint
-	IsAnd bool
-	Items []*ConditionalItem `orm:"reverse(many)"`
+	Id               uint
+	IsAnd            bool
+	Items            []*ConditionalItem            `orm:"reverse(many)"`
+	AttributeResults []*ConditionalAttributeResult `orm:"reverse(many)"`
 }
 
 type ConditionalItem struct {
